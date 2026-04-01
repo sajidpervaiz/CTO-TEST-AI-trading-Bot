@@ -1,0 +1,84 @@
+syntax = "proto3";
+
+package neuraltrader;
+
+option go_package = "./proto";
+
+enum Side {
+  SIDE_UNKNOWN = 0;
+  BUY = 1;
+  SELL = 2;
+}
+
+enum OrderType {
+  ORDER_TYPE_UNKNOWN = 0;
+  MARKET = 1;
+  LIMIT = 2;
+  STOP_MARKET = 3;
+  STOP_LIMIT = 4;
+}
+
+enum OrderStatus {
+  STATUS_UNKNOWN = 0;
+  OPEN = 1;
+  FILLED = 2;
+  PARTIALLY_FILLED = 3;
+  CANCELLED = 4;
+  REJECTED = 5;
+}
+
+message Order {
+  uint64 id = 1;
+  Side side = 2;
+  OrderType type = 3;
+  string symbol = 4;
+  double price = 5;
+  double quantity = 6;
+  double remaining = 7;
+  int64 timestamp = 8;
+  bool is_paper = 9;
+}
+
+message Fill {
+  uint64 maker_id = 1;
+  uint64 taker_id = 2;
+  double price = 3;
+  double quantity = 4;
+  Side side = 5;
+  int64 timestamp = 6;
+}
+
+message MatchResult {
+  repeated Fill fills = 1;
+  double remaining = 2;
+  string order_id = 3;
+}
+
+message OrderBookState {
+  string symbol = 1;
+  repeated Fill recent_fills = 2;
+  double best_bid = 3;
+  double best_ask = 4;
+  double mid_price = 5;
+  double spread = 6;
+}
+
+service OrderMatcherService {
+  rpc AddOrder(Order) returns (MatchResult);
+  rpc CancelOrder(CancelRequest) returns (CancelResult);
+  rpc GetOrderBook(OrderBookQuery) returns (OrderBookState);
+}
+
+message CancelRequest {
+  uint64 order_id = 1;
+  Side side = 2;
+  string symbol = 3;
+}
+
+message CancelResult {
+  bool success = 1;
+}
+
+message OrderBookQuery {
+  string symbol = 1;
+}

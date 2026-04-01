@@ -1,0 +1,24 @@
+[package]
+name = "neural-trader-rust"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+name = "neural_trader_rust"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tick-parser = { path = "../tick-parser" }
+order-matcher = { path = "../order-matcher" }
+risk-engine = { path = "../risk-engine" }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+numpy = "0.21"
+rayon = { workspace = true }
+
+[features]
+extension-module = ["pyo3/extension-module"]
+default = ["extension-module"]

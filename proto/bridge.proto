@@ -1,0 +1,117 @@
+syntax = "proto3";
+
+package neural_trader.bridge;
+
+// Bridge health check
+message HealthCheckRequest {}
+message HealthCheckResponse {
+  string status = 1;  // SERVING, NOT_SERVING
+  string version = 2;
+  int64 uptime_seconds = 3;
+}
+
+// Order management
+message OrderRequest {
+  string order_id = 1;
+  string client_order_id = 2;
+  string user_id = 3;
+  string symbol = 4;
+  string side = 5;  // "buy" or "sell"
+  string order_type = 6;  // "market", "limit"
+  double quantity = 7;
+  double price = 8;
+  string time_in_force = 9;
+  bool reduce_only = 10;
+  string venue = 11;
+  string idempotency_key = 12;
+  map<string, string> metadata = 13;
+}
+
+message OrderResponse {
+  string order_id = 1;
+  string client_order_id = 2;
+  string venue_order_id = 3;
+  string status = 4;
+  double filled_quantity = 5;
+  double remaining_quantity = 6;
+  double avg_fill_price = 7;
+  int64 filled_at = 8;
+  string error_message = 9;
+}
+
+// Market data
+message MarketDataRequest {
+  repeated string symbols = 1;
+  string data_type = 2;  // "ticker", "orderbook", "trades"
+  int32 depth = 3;
+}
+
+message MarketDataResponse {
+  string symbol = 1;
+  int64 timestamp = 2;
+  double bid_price = 3;
+  double ask_price = 4;
+  double bid_size = 5;
+  double ask_size = 6;
+  double last_price = 7;
+  double volume_24h = 8;
+}
+
+// Subscriptions
+message SubscribeRequest {
+  string symbol = 1;
+  repeated string channels = 2;  // "ticker", "orderbook", "trades"
+  int32 interval_ms = 3;
+}
+
+message SubscribeResponse {
+  bool success = 1;
+  string subscription_id = 2;
+  string message = 3;
+}
+
+// Bridge configuration
+message BridgeConfig {
+  repeated string enabled_venues = 1;
+  uint32 max_connections = 2;
+  uint32 buffer_size = 3;
+  bool enable_metrics = 4;
+  bool enable_tracing = 5;
+}
+
+message SetConfigRequest {
+  BridgeConfig config = 1;
+}
+
+message SetConfigResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// Metrics
+message MetricsRequest {}
+message MetricsResponse {
+  string metrics_text = 1;  // Prometheus format
+}
+
+// Ping/Pong
+message PingRequest {
+  int64 timestamp = 1;
+}
+
+message PingResponse {
+  int64 timestamp = 1;
+  string status = 2;
+}
+
+service BridgeService {
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+  rpc SubmitOrder(OrderRequest) returns (OrderResponse);
+  rpc CancelOrder(OrderRequest) returns (OrderResponse);
+  rpc GetOrderStatus(OrderRequest) returns (OrderResponse);
+  rpc GetMarketData(MarketDataRequest) returns (MarketDataResponse);
+  rpc Subscribe(SubscribeRequest) returns (SubscribeResponse);
+  rpc SetConfig(SetConfigRequest) returns (SetConfigResponse);
+  rpc GetMetrics(MetricsRequest) returns (MetricsResponse);
+  rpc Ping(PingRequest) returns (PingResponse);
+}

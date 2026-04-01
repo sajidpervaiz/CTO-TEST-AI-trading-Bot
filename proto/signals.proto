@@ -1,0 +1,116 @@
+syntax = "proto3";
+
+package neural_trader.signals;
+
+// Signal messages
+message TradingSignal {
+  string signal_id = 1;
+  string model_id = 2;
+  int64 timestamp = 3;
+  string symbol = 4;
+  string side = 5;  // "long" or "short"
+  double prediction = 6;  // 0.0 to 1.0
+  double confidence = 7;  // 0.0 to 1.0
+  double target_price = 8;
+  double stop_loss_price = 9;
+  string regime = 10;
+  string quality = 11;
+  bool validated = 12;
+}
+
+// Prediction messages
+message PredictionRequest {
+  string model_id = 1;
+  repeated double features = 2;
+  repeated string feature_names = 3;
+  string regime = 4;
+  bool use_ensemble = 5;
+}
+
+message PredictionResponse {
+  string prediction_id = 1;
+  double prediction = 2;
+  double confidence = 3;
+  repeated double individual_predictions = 4;
+  repeated double model_weights = 5;
+  int64 timestamp = 6;
+}
+
+// Feature messages
+message FeatureSet {
+  int64 timestamp = 1;
+  string symbol = 2;
+  map<string, double> technical_features = 3;
+  map<string, double> microstructure_features = 4;
+  map<string, double> macro_features = 5;
+  map<string, double> cross_asset_features = 6;
+}
+
+message GetFeaturesRequest {
+  string symbol = 1;
+  int64 start_time = 2;
+  int64 end_time = 3;
+  repeated string feature_types = 4;
+}
+
+message GetFeaturesResponse {
+  repeated FeatureSet feature_sets = 1;
+}
+
+// Model management messages
+message ModelInfo {
+  string model_id = 1;
+  string model_type = 2;  // "lightgbm", "xgboost"
+  int64 trained_at = 3;
+  double accuracy = 4;
+  double precision = 5;
+  double recall = 6;
+  double f1_score = 7;
+  repeated string feature_names = 8;
+}
+
+message GetModelsRequest {
+  string model_type = 1;
+}
+
+message GetModelsResponse {
+  repeated ModelInfo models = 1;
+}
+
+// Signal validation messages
+message SignalValidationRequest {
+  TradingSignal signal = 1;
+  string current_regime = 2;
+  map<string, double> market_conditions = 3;
+}
+
+message SignalValidationResponse {
+  bool is_valid = 1;
+  string reason = 2;
+  string quality = 3;
+  double adjusted_confidence = 4;
+}
+
+// Ensemble messages
+message EnsemblePredictionRequest {
+  repeated string model_ids = 1;
+  repeated double features = 2;
+  string regime = 3;
+  bool use_regime_weights = 4;
+}
+
+message EnsemblePredictionResponse {
+  double ensemble_prediction = 5;
+  double calibrated_prediction = 6;
+  double confidence = 7;
+  repeated double model_predictions = 8;
+  repeated double weights = 9;
+}
+
+service SignalService {
+  rpc Predict(PredictionRequest) returns (PredictionResponse);
+  rpc EnsemblePredict(EnsemblePredictionRequest) returns (EnsemblePredictionResponse);
+  rpc ValidateSignal(SignalValidationRequest) returns (SignalValidationResponse);
+  rpc GetFeatures(GetFeaturesRequest) returns (GetFeaturesResponse);
+  rpc GetModels(GetModelsRequest) returns (GetModelsResponse);
+}

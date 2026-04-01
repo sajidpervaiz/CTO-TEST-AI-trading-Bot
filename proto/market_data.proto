@@ -1,0 +1,75 @@
+syntax = "proto3";
+
+package neuraltrader;
+
+option go_package = "./proto";
+
+// A single trade tick
+message Tick {
+  string exchange = 1;
+  string symbol = 2;
+  int64 timestamp_us = 3;
+  double price = 4;
+  double volume = 5;
+  string side = 6;
+  string trade_id = 7;
+}
+
+// An OHLCV candle
+message Candle {
+  string exchange = 1;
+  string symbol = 2;
+  string timeframe = 3;
+  int64 timestamp = 4;
+  double open = 5;
+  double high = 6;
+  double low = 7;
+  double close = 8;
+  double volume = 9;
+  int32 num_trades = 10;
+}
+
+// An order book level
+message PriceLevel {
+  double price = 1;
+  double quantity = 2;
+  int32 count = 3;
+}
+
+// Order book snapshot
+message OrderBookSnapshot {
+  string exchange = 1;
+  string symbol = 2;
+  int64 timestamp_us = 3;
+  repeated PriceLevel bids = 4;
+  repeated PriceLevel asks = 5;
+}
+
+// Batch of ticks for bulk processing
+message TickBatch {
+  repeated Tick ticks = 1;
+}
+
+// Service for streaming market data
+service MarketDataService {
+  rpc StreamTicks(TickSubscribeRequest) returns (stream Tick);
+  rpc StreamCandles(CandleSubscribeRequest) returns (stream Candle);
+  rpc GetOrderBook(OrderBookRequest) returns (OrderBookSnapshot);
+}
+
+message TickSubscribeRequest {
+  string exchange = 1;
+  repeated string symbols = 2;
+}
+
+message CandleSubscribeRequest {
+  string exchange = 1;
+  repeated string symbols = 2;
+  string timeframe = 3;
+}
+
+message OrderBookRequest {
+  string exchange = 1;
+  string symbol = 2;
+  int32 depth = 3;
+}

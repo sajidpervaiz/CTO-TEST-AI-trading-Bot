@@ -1,0 +1,25 @@
+[package]
+name = "order-matcher"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+crossbeam = { workspace = true }
+crossbeam-skiplist = { workspace = true }
+parking_lot = { workspace = true }
+dashmap = { workspace = true }
+ahash = { workspace = true }
+smallvec = { workspace = true }
+log = { workspace = true }
+
+[dev-dependencies]
+criterion = { workspace = true }
+proptest = { workspace = true }
+
+[[bench]]
+name = "matcher_bench"
+harness = false

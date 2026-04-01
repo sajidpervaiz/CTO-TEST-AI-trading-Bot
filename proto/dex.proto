@@ -1,0 +1,68 @@
+syntax = "proto3";
+
+package neuraltrader;
+
+option go_package = "./proto";
+
+message SwapRequest {
+  string dex = 1;
+  string token_in = 2;
+  string token_out = 3;
+  string amount_in = 4;
+  uint32 max_slippage_bps = 5;
+  string recipient = 6;
+  uint32 deadline = 7;
+}
+
+message DEXQuote {
+  string dex = 1;
+  string token_in = 2;
+  string token_out = 3;
+  string amount_in = 4;
+  string amount_out = 5;
+  double price_impact_pct = 6;
+  string gas_estimate = 7;
+  repeated string route = 8;
+  int64 timestamp = 9;
+  int64 valid_until = 10;
+}
+
+message SwapResult {
+  string tx_hash = 1;
+  string dex = 2;
+  string token_in = 3;
+  string token_out = 4;
+  string amount_in = 5;
+  string amount_out = 6;
+  string gas_used = 7;
+  string status = 8;
+  bool is_paper = 9;
+  int64 timestamp = 10;
+}
+
+message BestQuoteRequest {
+  string token_in = 1;
+  string token_out = 2;
+  string amount_in = 3;
+  repeated string dexes = 4;
+}
+
+message BestQuoteResponse {
+  DEXQuote best = 1;
+  repeated DEXQuote all = 2;
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+  bool healthy = 1;
+  string version = 2;
+  repeated string active_dexes = 3;
+}
+
+service DEXService {
+  rpc GetQuote(SwapRequest) returns (DEXQuote);
+  rpc GetBestQuote(BestQuoteRequest) returns (BestQuoteResponse);
+  rpc ExecuteSwap(SwapRequest) returns (SwapResult);
+  rpc Health(HealthRequest) returns (HealthResponse);
+}

@@ -1,0 +1,104 @@
+syntax = "proto3";
+
+package neural_trader.risk;
+
+// Risk check messages
+message RiskCheckRequest {
+  string user_id = 1;
+  string symbol = 2;
+  string side = 3;
+  double quantity = 4;
+  double price = 5;
+  string idempotency_key = 6;
+}
+
+message RiskCheckResponse {
+  bool passed = 1;
+  string reason = 2;
+  double margin_required = 3;
+  double margin_available = 4;
+  double total_exposure = 5;
+  double max_position_value = 6;
+}
+
+// Position messages
+message Position {
+  string symbol = 1;
+  string side = 2;
+  double quantity = 3;
+  double avg_price = 4;
+  double unrealized_pnl = 5;
+  double realized_pnl = 6;
+  int64 entry_time = 7;
+}
+
+message GetPositionsRequest {
+  string user_id = 1;
+  repeated string symbols = 2;
+}
+
+message GetPositionsResponse {
+  repeated Position positions = 1;
+}
+
+// Margin messages
+message MarginInfo {
+  double account_balance = 1;
+  double margin_available = 2;
+  double total_exposure = 3;
+  double leverage_used = 4;
+  double leverage_limit = 5;
+  int32 open_positions = 6;
+}
+
+message GetMarginInfoRequest {
+  string user_id = 1;
+}
+
+message GetMarginInfoResponse {
+  MarginInfo margin_info = 1;
+}
+
+// Risk limit messages
+message RiskLimits {
+  double max_position_value = 1;
+  double max_order_size = 2;
+  uint32 max_orders_per_sec = 3;
+  double max_concentration = 4;
+  double leverage_limit = 5;
+  double stop_loss_pct = 6;
+}
+
+message SetRiskLimitsRequest {
+  string user_id = 1;
+  RiskLimits limits = 2;
+}
+
+message SetRiskLimitsResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// Circuit breaker messages
+message CircuitBreakerState {
+  string state = 1;  // CLOSED, OPEN, HALF_OPEN
+  uint32 failure_count = 2;
+  uint32 success_count = 3;
+  int64 last_failure_time = 4;
+}
+
+message GetCircuitBreakerStateRequest {
+  string venue = 1;
+}
+
+message GetCircuitBreakerStateResponse {
+  CircuitBreakerState state = 1;
+}
+
+service RiskService {
+  rpc CheckRisk(RiskCheckRequest) returns (RiskCheckResponse);
+  rpc GetPositions(GetPositionsRequest) returns (GetPositionsResponse);
+  rpc GetMarginInfo(GetMarginInfoRequest) returns (GetMarginInfoResponse);
+  rpc SetRiskLimits(SetRiskLimitsRequest) returns (SetRiskLimitsResponse);
+  rpc GetCircuitBreakerState(GetCircuitBreakerStateRequest) returns (GetCircuitBreakerStateResponse);
+}

@@ -1,0 +1,68 @@
+# Prometheus Configuration for Neural Trader v4
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'neural-trader-prod'
+    environment: 'production'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+
+# Rule files
+rule_files:
+  - '/etc/prometheus/alerts/*.yml'
+
+# Scrape configurations
+scrape_configs:
+  # Gateway service metrics
+  - job_name: 'gateway'
+    static_configs:
+      - targets: ['rust-gateway:8001']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  # Trading Engine metrics
+  - job_name: 'trading-engine'
+    static_configs:
+      - targets: ['trading-engine:8000']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  # DEX Layer metrics
+  - job_name: 'dex-layer'
+    static_configs:
+      - targets: ['dex-layer:3001']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  # Redis metrics
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # PostgreSQL metrics
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres:5432']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # Node Exporter (if available)
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['localhost:9100']
+    scrape_interval: 15s
+
+# Storage configuration
+storage:
+  tsdb:
+    path: /prometheus
+    retention.time: 30d
+    retention.size: 10GB

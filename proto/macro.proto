@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+package neuraltrader;
+
+option go_package = "./proto";
+
+message FundingRate {
+  string exchange = 1;
+  string symbol = 2;
+  double rate = 3;
+  double predicted_rate = 4;
+  int64 next_funding_time = 5;
+  int64 timestamp = 6;
+}
+
+message OpenInterest {
+  string exchange = 1;
+  string symbol = 2;
+  double oi_usd = 3;
+  double oi_contracts = 4;
+  double oi_change_24h = 5;
+  int64 timestamp = 6;
+}
+
+message VolatilityIndex {
+  string symbol = 1;
+  string method = 2;
+  double value = 3;
+  double annualized = 4;
+  int32 lookback_days = 5;
+  int64 timestamp = 6;
+}
+
+message FundingArbitrageOpportunity {
+  string long_exchange = 1;
+  string short_exchange = 2;
+  string symbol = 3;
+  double rate_diff_bps = 4;
+  double estimated_apr = 5;
+  int64 timestamp = 6;
+}
+
+message MacroSnapshot {
+  repeated FundingRate funding_rates = 1;
+  repeated OpenInterest open_interests = 2;
+  repeated VolatilityIndex volatility_indices = 3;
+  int64 timestamp = 4;
+}
+
+message MacroRequest {
+  string symbol = 1;
+  repeated string exchanges = 2;
+}
+
+service MacroDataService {
+  rpc GetFundingRates(MacroRequest) returns (stream FundingRate);
+  rpc GetOpenInterest(MacroRequest) returns (stream OpenInterest);
+  rpc GetVolatilityIndex(MacroRequest) returns (VolatilityIndex);
+  rpc GetSnapshot(MacroRequest) returns (MacroSnapshot);
+  rpc GetArbitrageOpportunities(MacroRequest) returns (stream FundingArbitrageOpportunity);
+}

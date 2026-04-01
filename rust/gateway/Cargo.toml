@@ -1,0 +1,32 @@
+[package]
+name = "gateway"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+tokio = { workspace = true }
+tonic = { workspace = true }
+prost = { workspace = true }
+bytes = { workspace = true }
+hyper = { workspace = true }
+tower = { workspace = true }
+prometheus = { workspace = true }
+crossbeam-channel = { workspace = true }
+log = { workspace = true }
+parking_lot = { workspace = true }
+pyo3 = { workspace = true }
+
+[dev-dependencies]
+criterion = { workspace = true }
+
+[[bench]]
+name = "gateway_bench"
+harness = false
+
+[build-dependencies]
+tonic-build = "0.11"

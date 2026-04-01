@@ -1,0 +1,61 @@
+# Alertmanager Configuration for Neural Trader v4
+
+global:
+  resolve_timeout: 5m
+  smtp_smarthost: 'localhost:587'
+  smtp_from: 'alerts@neuraltrader.com'
+
+# Route configuration
+route:
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 12h
+  receiver: 'default'
+
+  routes:
+    # Critical alerts go to PagerDuty/SMS
+    - match:
+        severity: 'critical'
+      receiver: 'critical-alerts'
+
+    # Warning alerts go to email
+    - match:
+        severity: 'warning'
+      receiver: 'warning-alerts'
+
+    # Trading-specific alerts
+    - match_re:
+        alertname: '(OrderFailure|CircuitBreakerOpen)'
+      receiver: 'trading-alerts'
+
+# Receivers
+receivers:
+  - name: 'default'
+    webhook_configs:
+      - url: 'http://slack-webhook-url'
+
+  - name: 'critical-alerts'
+    pagerduty_configs:
+      - service_key: '<PAGERDUTY_SERVICE_KEY>'
+
+  - name: 'warning-alerts'
+    email_configs:
+      - to: 'ops-team@neuraltrader.com'
+        headers:
+          Subject: 'Warning: Neural Trader Alert'
+
+  - name: 'trading-alerts'
+    slack_configs:
+      - api_url: '<SLACK_WEBHOOK_URL>'
+        channel: '#trading-alerts'
+
+# Inhibit rules
+inhibit_rules:
+  # Don't alert if system is already in maintenance
+  - source_match:
+      alertname: 'ServiceDown'
+    target_match_re:
+      alertname: '(OrderFailure|CircuitBreakerOpen)'
+    equal: ['service', 'instance']
+    inhibition_mode: 'equal'
