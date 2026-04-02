@@ -85,6 +85,9 @@ class SmartOrderRouter:
             "reliability": 0.10,
         }
 
+        self.score_refresh_interval_sec = 30
+        self._last_score_refresh = 0.0
+
         self._lock = asyncio.Lock()
 
     async def initialize(self) -> None:
@@ -119,6 +122,8 @@ class SmartOrderRouter:
             Routing decision with venue(s) and execution plan
         """
         async with self._lock:
+            await self._refresh_scores_if_needed(symbol)
+
             available_venues = [
                 (venue, score)
                 for venue, score in self.venue_scores.items()
@@ -149,7 +154,7 @@ class SmartOrderRouter:
                     venue=venue,
                     quantity=route_qty,
                     expected_fill_price=expected_price,
-                    estimated_cost=self._calculate_estimated_cost(score, route_qty),
+                    estimated_cost=self._calculate_estimated_cost(score, route_qty, expected_price),
                     execution_time_ms=score.latency_ms,
                     score=score.score,
                 )
@@ -163,6 +168,10 @@ class SmartOrderRouter:
                 )
 
             total_qty = sum(r.quantity for r in routes)
+            if total_qty <= 0:
+                logger.warning("No routable quantity available for {}", symbol)
+                return None
+
             weighted_price = sum(r.quantity * r.expected_fill_price for r in routes) / total_qty
             total_cost = sum(r.estimated_cost for r in routes)
 
@@ -174,6 +183,21 @@ class SmartOrderRouter:
                 recommended_venue=selected_venues[0][0],
                 confidence=selected_venues[0][1].score,
             )
+
+    async def _refresh_scores_if_needed(self, symbol: str) -> None:
+        now = time.time()
+        if self.venue_scores and (now - self._last_score_refresh) < self.score_refresh_interval_sec:
+            return
+
+        refreshed: Dict[Venue, VenueScore] = {}
+        for venue, executor in self.executors.items():
+            if executor is None:
+                continue
+            refreshed[venue] = await self._calculate_venue_score(venue, symbol)
+
+        if refreshed:
+            self.venue_scores = refreshed
+            self._last_score_refresh = now
 
     async def execute_routed_order(
         self,
@@ -220,7 +244,7 @@ class SmartOrderRouter:
 
         return results
 
-    async def _calculate_venue_score(self, venue: Venue) -> VenueScore:
+    async def _calculate_venue_score(self, venue: Venue, symbol: str = "BTC/USDT") -> VenueScore:
         """Calculate comprehensive venue score."""
         executor = self.executors.get(venue)
         if not executor:
@@ -235,8 +259,6 @@ class SmartOrderRouter:
             )
 
         try:
-            symbol = "BTC/USDT"
-
             snapshot = await executor.get_orderbook_snapshot(symbol, depth=10)
 
             liquidity = sum(
@@ -313,12 +335,16 @@ class SmartOrderRouter:
         except Exception:
             return 0.0
 
-    def _calculate_estimated_cost(self, score: VenueScore, quantity: float) -> float:
+    def _calculate_estimated_cost(self, score: VenueScore, quantity: float, expected_price: float) -> float:
         """Calculate estimated execution cost including fees and slippage."""
-        mid_price = score.liquidity / quantity
+        if quantity <= 0:
+            return 0.0
+
+        if expected_price <= 0:
+            expected_price = 0.0
 
         slippage_cost = (score.spread / 2) * quantity
-        fee_cost = mid_price * quantity * score.fee
+        fee_cost = expected_price * quantity * score.fee
 
         return slippage_cost + fee_cost
 
