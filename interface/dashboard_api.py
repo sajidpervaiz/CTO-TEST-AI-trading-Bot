@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import time
+from collections import defaultdict
 from typing import Any
 
 from loguru import logger
 
 try:
-    from fastapi import FastAPI
+    from fastapi import FastAPI, Request
+    from fastapi.responses import JSONResponse
     from fastapi.middleware.cors import CORSMiddleware
     import uvicorn
     _FASTAPI = True
@@ -15,6 +17,10 @@ except ImportError:
 
 from core.config import Config
 from core.event_bus import EventBus
+from interface.routes.config import router as config_router
+from interface.routes.orders import router as orders_router, configure_order_routes
+from interface.routes.positions import router as positions_router, configure_positions_routes
+from interface.routes.risk import router as risk_router, configure_risk_routes
 
 
 def build_app(
@@ -22,6 +28,7 @@ def build_app(
     event_bus: EventBus,
     risk_manager: Any = None,
     data_manager: Any = None,
+    order_manager: Any = None,
 ) -> Any:
     if not _FASTAPI:
         return None
@@ -31,12 +38,67 @@ def build_app(
         description="Hybrid Rust+TypeScript+Python trading engine",
         version="4.0.0",
     )
+
+    dashboard_cfg = config.get_value("monitoring", "dashboard_api", default={}) or {}
+    cors_origins = dashboard_cfg.get("allow_origins") or ["http://localhost", "http://127.0.0.1"]
+    auth_cfg = dashboard_cfg.get("auth", {}) if hasattr(dashboard_cfg, "get") else {}
+    if not isinstance(auth_cfg, dict):
+        auth_cfg = {}
+
+    require_api_key = bool(auth_cfg.get("require_api_key", False))
+    api_key = str(auth_cfg.get("api_key", "") or "").strip()
+    rate_limit_per_min = int(auth_cfg.get("rate_limit_per_min", 120))
+    exempt_paths = {
+        "/",
+        "/health",
+        "/docs",
+        "/openapi.json",
+        "/redoc",
+    }
+
+    # In-memory limiter is sufficient for single-instance Tier 0 deployments.
+    ip_rate_state: dict[str, dict[str, int]] = defaultdict(lambda: {"window_start": 0, "count": 0})
+
+    @app.middleware("http")
+    async def api_guard(request: Request, call_next):
+        path = request.url.path
+        if path not in exempt_paths:
+            if rate_limit_per_min > 0:
+                ip = request.client.host if request.client else "unknown"
+                now = int(time.time())
+                state = ip_rate_state[ip]
+                if now - state["window_start"] >= 60:
+                    state["window_start"] = now
+                    state["count"] = 0
+                state["count"] += 1
+                if state["count"] > rate_limit_per_min:
+                    return JSONResponse(status_code=429, content={"detail": "rate_limit_exceeded"})
+
+            if require_api_key and api_key:
+                provided = request.headers.get("x-api-key")
+                if not provided:
+                    auth_header = request.headers.get("authorization", "")
+                    if auth_header.lower().startswith("bearer "):
+                        provided = auth_header[7:].strip()
+                if provided != api_key:
+                    return JSONResponse(status_code=401, content={"detail": "unauthorized"})
+
+        return await call_next(request)
+
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=cors_origins,
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    configure_order_routes(order_manager)
+    configure_risk_routes(risk_manager)
+    configure_positions_routes(risk_manager)
+    app.include_router(config_router)
+    app.include_router(orders_router)
+    app.include_router(positions_router)
+    app.include_router(risk_router)
 
     @app.get("/")
     async def root() -> dict[str, Any]:
@@ -143,38 +205,6 @@ def build_app(
             "sharpe_ratio": 1.42,
             "max_drawdown_pct": 2.1,
             "daily_pnl": 125.50,
-        }
-
-    @app.get("/orders")
-    async def orders_history() -> dict[str, Any]:
-        return {
-            "orders": [
-                {
-                    "order_id": "order_1",
-                    "symbol": "BTC/USDT",
-                    "side": "buy",
-                    "quantity": 0.1,
-                    "price": 42500.0,
-                    "status": "filled",
-                    "timestamp": int(time.time()),
-                }
-            ],
-            "total": 1,
-            "pending": 0,
-        }
-
-    @app.get("/risk/summary")
-    async def risk_summary() -> dict[str, Any]:
-        if risk_manager is None:
-            return {"max_position_size_pct": 0, "max_daily_loss_pct": 0, "positions": []}
-        return {
-            "max_position_size_pct": 0.02,
-            "max_daily_loss_pct": 0.03,
-            "max_drawdown_pct": 0.10,
-            "max_open_positions": 5,
-            "current_positions": len(risk_manager.positions),
-            "daily_loss": 0,
-            "circuit_breaker_active": False,
         }
 
     @app.get("/system/stats")

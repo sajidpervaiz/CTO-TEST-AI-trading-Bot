@@ -217,6 +217,13 @@ monitoring:
   dashboard_api:
     host: "0.0.0.0"
     port: 8000
+    allow_origins:
+      - "http://localhost"
+      - "http://127.0.0.1"
+    auth:
+      require_api_key: false
+      api_key: "${DASHBOARD_API_KEY}"
+      rate_limit_per_min: 120
   telegram:
     enabled: false
     token: "${TELEGRAM_BOT_TOKEN}"
