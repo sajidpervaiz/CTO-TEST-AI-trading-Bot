@@ -360,6 +360,28 @@ docker compose -f docker-compose.prod-ready.yml --env-file .env.production up -d
 docker compose -f docker-compose.prod-ready.yml --env-file .env.production --profile e2e up --build --abort-on-container-exit e2e-tests
 ```
 
+### Enable Live Auto-Trading (Controlled Rollout)
+
+Safe default remains paper mode. To switch to live mode explicitly:
+
+```bash
+# 1) Generate live config from baseline settings
+python3 scripts/prepare_live_config.py
+
+# 2) Export real exchange credentials
+export BINANCE_API_KEY=your_real_key
+export BINANCE_API_SECRET=your_real_secret
+
+# 3) Run preflight checks (must PASS)
+export NT_CONFIG_PATH=config/settings.live.yaml
+python3 scripts/preflight_live_trading.py
+
+# 4) Start engine with live config
+python3 main.py
+```
+
+Runtime loads config from `NT_CONFIG_PATH` when set; otherwise it uses `config/settings.yaml`.
+
 ### Run Directly (Development)
 
 ```bash
