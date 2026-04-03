@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""neural-trader-v4 — Hybrid Rust + TypeScript + Python trading engine."""
+"""NUERAL-TRADER-5 — Hybrid Rust + TypeScript + Python trading engine."""
 from __future__ import annotations
 
 import asyncio
+import os
 import signal
 import sys
 from pathlib import Path
@@ -65,11 +66,11 @@ def _setup_logging(config: Config) -> None:
 
 
 async def main() -> None:
-    config = Config.get()
+    config = Config.get(path=os.getenv("NT_CONFIG_PATH"))
     _setup_logging(config)
 
     logger.info("=" * 60)
-    logger.info("  neural-trader-v4  |  paper_mode={}", config.paper_mode)
+    logger.info("  NUERAL-TRADER-5  |  paper_mode={}", config.paper_mode)
     logger.info("=" * 60)
 
     event_bus = EventBus()

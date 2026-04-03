@@ -77,6 +77,7 @@ models/*.onnx
 .env.*
 !.env.example
 !**/.env.example
+!.env.production.example
 *.pem
 *.key
 secrets/
