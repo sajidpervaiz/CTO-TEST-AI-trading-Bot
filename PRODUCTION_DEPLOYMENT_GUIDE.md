@@ -1,6 +1,20 @@
 # PRODUCTION DEPLOYMENT & VALIDATION GUIDE
 ## TIER 0 Complete Implementation for Live Trading
 
+Project Branding: NUERAL-TRADER-5
+
+## Legacy Document Notice
+
+This guide is kept for historical TIER0 workflows.
+
+Current canonical deployment flow:
+
+1. `DEPLOYMENT_GAP_CLOSURE.md`
+2. `docker-compose.prod-ready.yml`
+3. `.env.production`
+
+If any instruction in this document conflicts with the canonical flow above, follow `DEPLOYMENT_GAP_CLOSURE.md`.
+
 ---
 
 ## 🎯 Current Status: READY FOR LIVE DEPLOYMENT
@@ -139,7 +153,7 @@ echo "✅ PRE-FLIGHT COMPLETE - Ready for launch"
 pkill -9 -f "python3 main.py" || true
 
 # Start bot (will run in background)
-cd /workspaces/CTO-TEST-AI-trading-Bot
+cd /workspaces/nueral-trader-5
 python3 main.py > logs/bot.log 2>&1 &
 
 # Capture PID

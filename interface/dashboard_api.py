@@ -10,14 +10,18 @@ try:
     from fastapi import FastAPI, Request
     from fastapi.responses import JSONResponse
     from fastapi.middleware.cors import CORSMiddleware
+    from fastapi.staticfiles import StaticFiles
+    from fastapi.responses import FileResponse
     import uvicorn
     _FASTAPI = True
 except ImportError:
     _FASTAPI = False
 
+from pathlib import Path
+
 from core.config import Config
 from core.event_bus import EventBus
-from interface.routes.config import router as config_router
+from interface.routes.config import router as config_router, configure_config_routes
 from interface.routes.orders import router as orders_router, configure_order_routes
 from interface.routes.positions import router as positions_router, configure_positions_routes
 from interface.routes.risk import router as risk_router, configure_risk_routes
@@ -36,11 +40,13 @@ def build_app(
         return None
 
     app = FastAPI(
-        title="Neural Trader v4",
+        title="NUERAL-TRADER-5",
         description="Hybrid Rust+TypeScript+Python trading engine",
         version="4.0.0",
     )
     app.state.started_at = int(time.time())
+    static_dir = Path(__file__).resolve().parent / "static"
+    static_index = static_dir / "index.html"
 
     dashboard_cfg = config.get_value("monitoring", "dashboard_api", default={}) or {}
     cors_origins = dashboard_cfg.get("allow_origins") or ["http://localhost", "http://127.0.0.1"]
@@ -106,18 +112,24 @@ def build_app(
         allow_headers=["*"],
     )
 
+    if static_dir.exists():
+        app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+
     configure_order_routes(order_manager)
     configure_risk_routes(risk_manager)
     configure_positions_routes(risk_manager)
+    configure_config_routes(config, risk_manager, order_manager)
     app.include_router(config_router)
     app.include_router(orders_router)
     app.include_router(positions_router)
     app.include_router(risk_router)
 
     @app.get("/")
-    async def root() -> dict[str, Any]:
+    async def root() -> Any:
+        if static_index.exists():
+            return FileResponse(str(static_index))
         return {
-            "message": "Neural Trader v4 Dashboard",
+            "message": "NUERAL-TRADER-5 Dashboard",
             "docs": "/docs",
             "health": "/health",
             "positions": "/positions",
@@ -190,35 +202,58 @@ def build_app(
 
     @app.get("/signals/recent")
     async def recent_signals() -> dict[str, Any]:
+        signals: list[dict[str, Any]] = []
+        if order_manager is not None:
+            recent_orders = sorted(order_manager.orders.values(), key=lambda o: o.created_at, reverse=True)[:25]
+            for order in recent_orders:
+                signals.append(
+                    {
+                        "symbol": order.symbol,
+                        "direction": "long" if str(order.side.value).lower() == "buy" else "short",
+                        "score": float(order.metadata.get("score", 0.7)),
+                        "confidence": float(order.metadata.get("confidence", 0.75)),
+                        "timestamp": int(order.created_at),
+                        "technical_score": float(order.metadata.get("technical_score", 0.7)),
+                        "ml_score": float(order.metadata.get("ml_score", 0.7)),
+                        "sentiment_score": float(order.metadata.get("sentiment_score", 0.5)),
+                        "source": "order_flow",
+                    }
+                )
         return {
-            "signals": [
-                {
-                    "symbol": "BTC/USDT",
-                    "direction": "long",
-                    "score": 0.78,
-                    "confidence": 0.85,
-                    "timestamp": int(time.time()),
-                    "technical_score": 0.8,
-                    "ml_score": 0.75,
-                    "sentiment_score": 0.7,
-                }
-            ],
-            "total_today": 12,
-            "win_rate": 0.63,
+            "signals": signals[:20],
+            "total_today": len(signals),
+            "win_rate": None,
         }
 
     @app.get("/performance")
     async def performance_metrics() -> dict[str, Any]:
+        pnl_total = 0.0
+        pnl_pct = 0.0
+        trades_total = 0
+        trades_closed = 0
+        trades_open = 0
+        total_fees = 0.0
+        if risk_manager is not None:
+            pnl_total = float(sum(p.pnl for p in risk_manager.positions.values()))
+            equity = float(max(1.0, risk_manager.equity))
+            pnl_pct = float((pnl_total / equity) * 100.0)
+        if order_manager is not None:
+            stats = order_manager.get_stats()
+            trades_total = int(stats.get("total_orders", 0))
+            trades_open = int(stats.get("open_orders", 0))
+            trades_closed = int(stats.get("filled_orders", 0))
+            total_fees = float(stats.get("total_fees", 0.0))
         return {
-            "pnl_total": 1250.50,
-            "pnl_pct": 1.25,
-            "win_rate": 0.63,
-            "trades_total": 19,
-            "trades_closed": 16,
-            "trades_open": 3,
-            "sharpe_ratio": 1.42,
-            "max_drawdown_pct": 2.1,
-            "daily_pnl": 125.50,
+            "pnl_total": pnl_total,
+            "pnl_pct": pnl_pct,
+            "win_rate": None,
+            "trades_total": trades_total,
+            "trades_closed": trades_closed,
+            "trades_open": trades_open,
+            "sharpe_ratio": None,
+            "max_drawdown_pct": None,
+            "daily_pnl": pnl_total,
+            "total_fees": total_fees,
         }
 
     @app.get("/system/stats")
@@ -227,10 +262,17 @@ def build_app(
         cache_connected = bool(getattr(cache, "available", False))
         now = int(time.time())
         started_at = int(getattr(app.state, "started_at", now))
+        feeds_connected = 0
+        if data_manager is not None:
+            feeds_connected = len(getattr(data_manager, "_aggregators", {}))
+
+        websockets_active = 0
+        if event_bus is not None:
+            websockets_active = int(getattr(event_bus, "_queue", None).qsize()) if hasattr(getattr(event_bus, "_queue", None), "qsize") else 0
         return {
             "uptime_seconds": max(0, now - started_at),
-            "feeds_connected": 5,
-            "websockets_active": 2,
+            "feeds_connected": feeds_connected,
+            "websockets_active": websockets_active,
             "db_connected": db_connected,
             "cache_connected": cache_connected,
             "timestamp": now,

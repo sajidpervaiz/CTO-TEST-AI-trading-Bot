@@ -52,7 +52,10 @@ def main():
 
     ui_html = requests.get(f"{UI_BASE}/", timeout=10)
     ui_html.raise_for_status()
-    assert "NUERAL-TRADER-5 UI" in ui_html.text
+    html = ui_html.text
+    assert "NeuralTrader Pro - Institutional Terminal" in html
+    assert 'id="watchlist"' in html
+    assert 'id="chart"' in html
 
     print("E2E PASS")
 

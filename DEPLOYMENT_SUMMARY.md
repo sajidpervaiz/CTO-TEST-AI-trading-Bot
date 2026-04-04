@@ -1,5 +1,19 @@
 # 🚀 TIER 0 PRODUCTION DEPLOYMENT - COMPLETE SUMMARY
 
+Project Branding: NUERAL-TRADER-5
+
+## Canonical Flow Notice (Current)
+
+This summary documents the TIER0 baseline milestone.
+
+Current production-ready deployment path:
+
+1. `DEPLOYMENT_GAP_CLOSURE.md`
+2. `docker-compose.prod-ready.yml`
+3. `.env.production`
+
+Use that path for active operations and CI verification.
+
 ## Executive Status
 
 **🟢 READY FOR LIVE TRADING**
@@ -99,7 +113,7 @@ Your production-grade TIER 0 foundation is **100% complete and tested**. You hav
 
 ### Step 1: Pre-Flight (5 min)
 ```bash
-cd /workspaces/CTO-TEST-AI-trading-Bot
+cd /workspaces/nueral-trader-5
 pytest tests/unit/ -q
 # Expected: 49 passed ✅
 ```
@@ -189,7 +203,7 @@ If ALL metrics pass after 7 days → **Scale position size to 10x**
 ## 📁 File Structure (What Changed)
 
 ```
-/workspaces/CTO-TEST-AI-trading-Bot/
+/workspaces/nueral-trader-5/
 ├── core/
 │   ├── idempotency.py          ✅ (190 lines - complete)
 │   ├── circuit_breaker.py       ✅ (240 lines - complete)

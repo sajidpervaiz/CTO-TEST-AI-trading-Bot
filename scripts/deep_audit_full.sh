@@ -6,7 +6,7 @@ cd "$ROOT_DIR"
 
 echo "============================================="
 echo "FULL REPOSITORY DEEP AUDIT"
-echo "Repo: CTO-TEST-AI-trading-Bot"
+echo "Repo: NUERAL-TRADER-5"
 echo "Date: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
 echo "============================================="
 
@@ -66,12 +66,54 @@ print(f"ROUTE_RETENTION_OK routes={len(routes)} verified={len(required)}")
 PY
 
 echo "[5/6] Guardrail: ensure no tracked feature file deletions in working tree..."
-if git diff --name-status --diff-filter=D | grep -q .; then
-  echo "DELETION_DETECTED"
-  git diff --name-status --diff-filter=D
-  exit 1
-fi
-echo "NO_TRACKED_DELETIONS"
+python - <<'PY'
+from pathlib import Path
+import subprocess
+
+
+def deleted_files() -> list[str]:
+  out = subprocess.check_output(
+    ["git", "diff", "--name-status", "--diff-filter=D"],
+    text=True,
+  ).strip()
+  if not out:
+    return []
+  deleted: list[str] = []
+  for line in out.splitlines():
+    parts = line.split("\t")
+    if len(parts) == 2 and parts[0] == "D":
+      deleted.append(parts[1])
+  return deleted
+
+
+def is_allowed_rename(old_path: str) -> bool:
+  p = Path(old_path)
+  if p.name.startswith("test_") and p.suffix == ".py" and "tests" in p.parts:
+    replacement = p.with_name(f"test_nueral_trader_5_{p.stem[5:]}.py")
+    return replacement.exists()
+
+  if old_path == "tests/integration/test_dashboard_api_routes.py":
+    return Path("tests/integration/test_nueral_trader_5_dashboard_api_routes.py").exists()
+
+  if old_path == "ts/dex-layer/src/uniswap/executor.test.ts":
+    return Path("ts/dex-layer/src/uniswap/test_nueral_trader_5_executor.test.ts").exists()
+
+  return False
+
+
+deleted = deleted_files()
+unexpected = [d for d in deleted if not is_allowed_rename(d)]
+
+if unexpected:
+  print("DELETION_DETECTED_UNEXPECTED")
+  for item in unexpected:
+    print(f"D\t{item}")
+  raise SystemExit(1)
+
+print("NO_UNEXPECTED_TRACKED_DELETIONS")
+if deleted:
+  print(f"ALLOWED_RENAME_DELETIONS={len(deleted)}")
+PY
 
 echo "[6/6] Checking Tier 2 recall artifact..."
 if [[ -f "TIER2_DEEP_AUDIT_RECALL.md" ]]; then

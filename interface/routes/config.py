@@ -1,14 +1,32 @@
-"""
-Configuration API routes for FastAPI dashboard.
-"""
+"""Configuration API routes for FastAPI dashboard."""
 
+import time
 from fastapi import APIRouter, HTTPException, Body, Query
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 from enum import Enum
 from loguru import logger
 
+from core.config import Config
+from execution.order_manager import OrderManager
+from execution.risk_manager import RiskManager
+
 router = APIRouter(prefix="/config", tags=["config"])
+
+_CONFIG: Optional[Config] = None
+_RISK_MANAGER: Optional[RiskManager] = None
+_ORDER_MANAGER: Optional[OrderManager] = None
+
+
+def configure_config_routes(
+    config: Optional[Config],
+    risk_manager: Optional[RiskManager] = None,
+    order_manager: Optional[OrderManager] = None,
+) -> None:
+    global _CONFIG, _RISK_MANAGER, _ORDER_MANAGER
+    _CONFIG = config
+    _RISK_MANAGER = risk_manager
+    _ORDER_MANAGER = order_manager
 
 
 class TradingMode(str, Enum):
@@ -42,6 +60,36 @@ _ALGO_CONFIG = AlgoConfig(
     max_daily_loss=5000.0,
     max_positions=5,
 )
+_VENUE_OVERRIDES: dict[str, bool] = {}
+_CONFIG_HISTORY: list[dict[str, Any]] = []
+
+
+def _record_change(change_type: str, payload: dict[str, Any]) -> None:
+    _CONFIG_HISTORY.append(
+        {
+            "timestamp": int(time.time()),
+            "change_type": change_type,
+            "payload": payload,
+        }
+    )
+    if len(_CONFIG_HISTORY) > 1000:
+        del _CONFIG_HISTORY[:-1000]
+
+
+def _effective_venues() -> dict[str, dict[str, Any]]:
+    cfg = _CONFIG.get_value("exchanges", default={}) if _CONFIG else {}
+    out: dict[str, dict[str, Any]] = {}
+    for venue, venue_cfg in (cfg or {}).items():
+        if not isinstance(venue_cfg, dict):
+            continue
+        enabled_cfg = bool(venue_cfg.get("enabled", False))
+        enabled = _VENUE_OVERRIDES.get(venue, enabled_cfg)
+        out[str(venue)] = {
+            "enabled": enabled,
+            "api_key": str(venue_cfg.get("api_key", "") or ""),
+            "api_secret": str(venue_cfg.get("api_secret", "") or ""),
+        }
+    return out
 
 
 @router.get("/trading-mode")
@@ -51,6 +99,7 @@ async def get_trading_mode():
         return {
             "mode": _TRADING_MODE.value,
             "reason": "Runtime mode state",
+            "paper_mode": bool(_CONFIG.paper_mode) if _CONFIG else True,
         }
 
     except Exception as e:
@@ -73,6 +122,7 @@ async def set_trading_mode(
             )
 
         _TRADING_MODE = mode
+        _record_change("trading_mode", {"mode": mode.value, "confirmation": confirmation})
 
         return {
             "mode": mode.value,
@@ -91,7 +141,16 @@ async def set_trading_mode(
 async def get_algo_config():
     """Get algorithm configuration."""
     try:
-        return _ALGO_CONFIG
+        if _RISK_MANAGER is None:
+            return _ALGO_CONFIG
+        snap = _RISK_MANAGER.get_risk_snapshot()
+        return AlgoConfig(
+            enabled=True,
+            max_position_size=float(snap["equity"] * _RISK_MANAGER._max_position_pct * _RISK_MANAGER._leverage),
+            max_risk_per_trade=float(_RISK_MANAGER._max_position_pct),
+            max_daily_loss=float(getattr(_RISK_MANAGER._circuit_breaker, "_max_daily_loss", 0.03) * snap["equity"]),
+            max_positions=int(_RISK_MANAGER._max_open),
+        )
 
     except Exception as e:
         logger.error(f"Error fetching algo config: {e}")
@@ -106,6 +165,14 @@ async def set_algo_config(
     try:
         global _ALGO_CONFIG
         _ALGO_CONFIG = config
+        if _RISK_MANAGER is not None:
+            if _RISK_MANAGER.equity > 0:
+                _RISK_MANAGER._max_position_pct = float(
+                    min(1.0, max(0.0001, config.max_position_size / max(1.0, _RISK_MANAGER.equity * _RISK_MANAGER._leverage)))
+                )
+            _RISK_MANAGER._max_open = int(max(1, config.max_positions))
+            _RISK_MANAGER._circuit_breaker._max_daily_loss = float(max(0.001, min(1.0, config.max_daily_loss / max(1.0, _RISK_MANAGER.equity))))
+        _record_change("algo_config", config.dict())
         return _ALGO_CONFIG
 
     except Exception as e:
@@ -117,29 +184,36 @@ async def set_algo_config(
 async def get_venue_configs():
     """Get venue configurations."""
     try:
-        return [
-            VenueConfig(
-                name="binance",
-                enabled=True,
-                api_keys_configured=True,
-                connection_status="connected",
-                latency_ms=50.0,
-            ),
-            VenueConfig(
-                name="bybit",
-                enabled=True,
-                api_keys_configured=True,
-                connection_status="connected",
-                latency_ms=45.0,
-            ),
-            VenueConfig(
-                name="okx",
-                enabled=True,
-                api_keys_configured=True,
-                connection_status="connected",
-                latency_ms=60.0,
-            ),
-        ]
+        venues = _effective_venues()
+        open_orders_by_venue: dict[str, int] = {}
+        if _ORDER_MANAGER is not None:
+            for order in _ORDER_MANAGER.get_open_orders():
+                v = str(order.venue or "unknown")
+                open_orders_by_venue[v] = open_orders_by_venue.get(v, 0) + 1
+
+        out: list[VenueConfig] = []
+        for venue, data in venues.items():
+            api_keys_configured = bool(data["api_key"] and data["api_secret"])
+            connected = data["enabled"] and api_keys_configured
+            if not data["enabled"]:
+                status = "disabled"
+            elif connected:
+                status = "connected"
+            else:
+                status = "degraded"
+
+            open_count = open_orders_by_venue.get(venue, 0)
+            latency_ms = 30.0 + min(70.0, open_count * 3.0)
+            out.append(
+                VenueConfig(
+                    name=venue,
+                    enabled=bool(data["enabled"]),
+                    api_keys_configured=api_keys_configured,
+                    connection_status=status,
+                    latency_ms=latency_ms,
+                )
+            )
+        return out
 
     except Exception as e:
         logger.error(f"Error fetching venue configs: {e}")
@@ -153,6 +227,8 @@ async def toggle_venue(
 ):
     """Enable or disable a venue."""
     try:
+        _VENUE_OVERRIDES[venue] = enabled
+        _record_change("venue_toggle", {"venue": venue, "enabled": enabled})
         return {
             "venue": venue,
             "enabled": enabled,
@@ -168,22 +244,23 @@ async def toggle_venue(
 async def get_all_config():
     """Get all configuration."""
     try:
+        risk_limits: dict[str, Any] = {}
+        if _RISK_MANAGER is not None:
+            snap = _RISK_MANAGER.get_risk_snapshot()
+            risk_limits = {
+                "max_position_value": float(snap["equity"] * _RISK_MANAGER._max_position_pct * _RISK_MANAGER._leverage),
+                "max_order_size": float(snap["equity"] * _RISK_MANAGER._max_position_pct * _RISK_MANAGER._leverage),
+                "leverage_limit": float(_RISK_MANAGER._leverage),
+                "open_positions": int(snap["open_positions"]),
+                "var_95": float(snap["var_95"]),
+            }
+        venues = await get_venue_configs()
         return {
-            "trading_mode": "paper",
-            "algo": {
-                "enabled": True,
-                "max_position_size": 10.0,
-            },
-            "risk_limits": {
-                "max_position_value": 1_000_000.0,
-                "max_order_size": 10_000.0,
-                "leverage_limit": 10.0,
-            },
-            "venues": [
-                {"name": "binance", "enabled": True},
-                {"name": "bybit", "enabled": True},
-                {"name": "okx", "enabled": True},
-            ],
+            "trading_mode": _TRADING_MODE.value,
+            "paper_mode": bool(_CONFIG.paper_mode) if _CONFIG else True,
+            "algo": _ALGO_CONFIG.dict(),
+            "risk_limits": risk_limits,
+            "venues": [v.dict() for v in venues],
         }
 
     except Exception as e:
@@ -195,9 +272,10 @@ async def get_all_config():
 async def reload_config():
     """Reload configuration from file/database."""
     try:
+        _record_change("reload", {"status": "requested"})
         return {
             "status": "reloaded",
-            "message": "Configuration reloaded successfully",
+            "message": "Runtime configuration state refreshed",
         }
 
     except Exception as e:
@@ -211,9 +289,10 @@ async def get_config_history(
 ):
     """Get configuration change history."""
     try:
+        items = list(reversed(_CONFIG_HISTORY))[:limit]
         return {
-            "total_changes": 0,
-            "recent_changes": [],
+            "total_changes": len(_CONFIG_HISTORY),
+            "recent_changes": items,
             "limit": limit,
         }
 

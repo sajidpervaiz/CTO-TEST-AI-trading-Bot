@@ -1,19 +1,33 @@
 # TIER 0 TESTING & VALIDATION GUIDE
 ## Complete Test Suite for Production Deployment
 
+Project Branding: NUERAL-TRADER-5
+
+## Legacy Document Notice
+
+This guide remains for legacy TIER0 test procedures.
+
+Canonical production validation command:
+
+```bash
+docker compose -f docker-compose.prod-ready.yml --env-file .env.production --profile e2e up --build --abort-on-container-exit e2e-tests
+```
+
+Use `DEPLOYMENT_GAP_CLOSURE.md` as the authoritative runbook for production-ready stack verification.
+
 ---
 
 ## 📋 Quick Start: Run All Tests
 
 ```bash
 #!/bin/bash
-cd /workspaces/CTO-TEST-AI-trading-Bot
+cd /workspaces/nueral-trader-5
 
 # 1. Run all existing tests (should be 49/49 passing)
 pytest tests/unit/ -v --tb=short
 
 # 2. Run TIER 0 production tests
-pytest tests/unit/test_tier0_production.py -v --tb=short
+pytest tests/unit/test_nueral_trader_5_tier0_production.py -v --tb=short
 
 # 3. Run integration tests
 pytest tests/integration/ -v --tb=short
@@ -31,7 +45,7 @@ pytest tests/integration/ -v --tb=short
 **Purpose:** Verify duplicate prevention works correctly
 
 ```bash
-pytest tests/unit/test_tier0_production.py::TestIdempotencyManager -v
+pytest tests/unit/test_nueral_trader_5_tier0_production.py::TestIdempotencyManager -v
 ```
 
 **What gets tested:**
@@ -87,7 +101,7 @@ print("✓ All idempotency tests passed")
 **Purpose:** Verify full order lifecycle tracking
 
 ```bash
-pytest tests/unit/test_tier0_production.py::TestOrderManager -v
+pytest tests/unit/test_nueral_trader_5_tier0_production.py::TestOrderManager -v
 ```
 
 **What gets tested:**
@@ -184,7 +198,7 @@ print(f"✓ Self-trade prevention: {should_prevent}")
 **Purpose:** Verify fail-fast mechanism prevents cascade
 
 ```bash
-pytest tests/unit/test_tier0_production.py::TestCircuitBreaker -v
+pytest tests/unit/test_nueral_trader_5_tier0_production.py::TestCircuitBreaker -v
 ```
 
 **What gets tested:**
@@ -264,7 +278,7 @@ print("✅ All circuit breaker tests passed")
 **Purpose:** Verify exponential backoff with jitter
 
 ```bash
-pytest tests/unit/test_tier0_production.py::TestRetryPolicy -v
+pytest tests/unit/test_nueral_trader_5_tier0_production.py::TestRetryPolicy -v
 ```
 
 **What gets tested:**

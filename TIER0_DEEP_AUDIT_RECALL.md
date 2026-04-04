@@ -1,7 +1,7 @@
 # Tier 0 Deep Audit Recall
 
 Date: 2026-04-02
-Repository: CTO-TEST-AI-trading-Bot
+Repository: NUERAL-TRADER-5
 Branch: codespace-cuddly-happiness-9rjv5gjxpwjhxv45
 
 ## 1) Outcome Snapshot
@@ -106,7 +106,7 @@ Ops scripts:
 Run this block to re-confirm Tier 0 quickly in future sessions:
 
 ```bash
-cd /workspaces/CTO-TEST-AI-trading-Bot
+cd /workspaces/nueral-trader-5
 source .venv/bin/activate
 bash scripts/deep_audit_tier0.sh
 ```
