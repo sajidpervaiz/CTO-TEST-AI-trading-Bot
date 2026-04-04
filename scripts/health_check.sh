@@ -7,7 +7,7 @@
 
 set -e
 
-PROJECT_ROOT="/workspaces/CTO-TEST-AI-trading-Bot"
+PROJECT_ROOT="/workspaces/NUERAL-TRADER-5"
 LOG_FILE="$PROJECT_ROOT/logs/health_check.log"
 ALERT_LOG="$PROJECT_ROOT/logs/alerts.log"
 

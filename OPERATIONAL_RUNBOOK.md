@@ -1,6 +1,19 @@
 # OPERATIONAL RUNBOOK: TIER 0 LIVE TRADING
 ## Complete Guide for Running Production-Grade Trading System
 
+Project Branding: NUERAL-TRADER-5
+
+## Legacy Document Notice
+
+This runbook is preserved for earlier TIER0 process history.
+
+For current operations, run and monitor the Docker-first stack defined in:
+
+1. `DEPLOYMENT_GAP_CLOSURE.md`
+2. `docker-compose.prod-ready.yml`
+
+When instructions differ, treat `DEPLOYMENT_GAP_CLOSURE.md` as source of truth.
+
 ---
 
 ## 📋 Table of Contents
@@ -22,7 +35,7 @@
 
 ```bash
 #!/bin/bash
-cd /workspaces/CTO-TEST-AI-trading-Bot
+cd /workspaces/nueral-trader-5
 
 # 1. Verify Python 3.12+ installed
 python3 --version  # Expected: Python 3.12.x
@@ -53,7 +66,7 @@ bash scripts/deploy_tier0.sh
 ssh your-server
 
 # 2. Navigate to project
-cd /workspaces/CTO-TEST-AI-trading-Bot
+cd /workspaces/nueral-trader-5
 
 # 3. Check if bot is running
 ps aux | grep "python3 main.py"
@@ -112,7 +125,7 @@ fi
 #!/bin/bash
 # Run this at 6 AM every day
 
-PROJECT_ROOT="/workspaces/CTO-TEST-AI-trading-Bot"
+PROJECT_ROOT="/workspaces/nueral-trader-5"
 cd "$PROJECT_ROOT"
 
 echo "=== MORNING CHECK (6 AM) ==="
@@ -235,28 +248,28 @@ PRs also receive an automatic failure comment when this gate fails:
 ### Apply Branch Protection (GitHub)
 
 ```bash
-cd /workspaces/CTO-TEST-AI-trading-Bot
+cd /workspaces/nueral-trader-5
 bash scripts/enforce_branch_protection.sh --apply
 ```
 
 ### One-Command Full Governance Validation
 
 ```bash
-cd /workspaces/CTO-TEST-AI-trading-Bot
+cd /workspaces/nueral-trader-5
 bash scripts/professional_governance_all.sh
 ```
 
 To also attempt branch protection apply in the same run:
 
 ```bash
-cd /workspaces/CTO-TEST-AI-trading-Bot
+cd /workspaces/nueral-trader-5
 bash scripts/professional_governance_all.sh --apply-branch-protection
 ```
 
 ### Dry-Run Branch Protection Payload
 
 ```bash
-cd /workspaces/CTO-TEST-AI-trading-Bot
+cd /workspaces/nueral-trader-5
 bash scripts/enforce_branch_protection.sh
 ```
 
@@ -264,7 +277,7 @@ bash scripts/enforce_branch_protection.sh
 
 ```bash
 gh api \
-    /repos/sajidpervaiz/CTO-TEST-AI-trading-Bot/branches/main/protection/required_status_checks \
+    /repos/sajidpervaiz/NUERAL-TRADER-5/branches/main/protection/required_status_checks \
     -q '.contexts'
 ```
 | Paper mode disabled | 🔴 CRITICAL | Restart bot immediately |
@@ -274,7 +287,7 @@ gh api \
 The system runs `scripts/health_check.sh` automatically (via cron):
 
 ```
-0 0,6,12,18 * * * cd /workspaces/CTO-TEST-AI-trading-Bot && bash scripts/health_check.sh >> logs/cron.log 2>&1
+0 0,6,12,18 * * * cd /workspaces/nueral-trader-5 && bash scripts/health_check.sh >> logs/cron.log 2>&1
 ```
 
 **Check manually:**
@@ -414,7 +427,7 @@ tail -50 logs/bot.log | grep -i "error\|exception\|traceback"
 
 # 3. Restart bot
 echo "Restarting bot..."
-cd /workspaces/CTO-TEST-AI-trading-Bot
+cd /workspaces/nueral-trader-5
 python3 main.py > logs/bot.log 2>&1 &
 BOT_PID=$!
 echo "Bot started (PID: $BOT_PID)"

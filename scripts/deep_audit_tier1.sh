@@ -7,7 +7,7 @@ cd "$ROOT_DIR"
 
 echo "============================================="
 echo "TIER 1 DEEP AUDIT"
-echo "Repo: CTO-TEST-AI-trading-Bot"
+echo "Repo: NUERAL-TRADER-5"
 echo "Date: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
 echo "============================================="
 
@@ -16,14 +16,14 @@ bash scripts/deep_audit_tier0.sh
 
 echo "[2/4] Running Tier 1 unit validation suite..."
 pytest -q \
-  tests/unit/test_smart_order_router.py \
-  tests/unit/test_feature_engineering.py \
-  tests/unit/test_model_trainer.py \
-  tests/unit/test_ensemble_scorer.py \
-  tests/unit/test_funding_feed_arbitrage.py
+  tests/unit/test_nueral_trader_5_smart_order_router.py \
+  tests/unit/test_nueral_trader_5_feature_engineering.py \
+  tests/unit/test_nueral_trader_5_model_trainer.py \
+  tests/unit/test_nueral_trader_5_ensemble_scorer.py \
+  tests/unit/test_nueral_trader_5_funding_feed_arbitrage.py
 
 echo "[3/4] Running focused integration gate..."
-pytest -q tests/integration/test_dashboard_api_routes.py
+pytest -q tests/integration/test_nueral_trader_5_dashboard_api_routes.py
 
 echo "[4/4] Static file existence sanity checks..."
 required_files=(

@@ -1,5 +1,5 @@
 system:
-  name: neural-trader-v4
+  name: NUERAL-TRADER-5
   version: "4.0.0"
   paper_mode: true
   log_level: INFO

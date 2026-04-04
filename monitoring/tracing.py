@@ -40,7 +40,7 @@ class TracingConfig:
 
     def __init__(
         self,
-        service_name: str = "neural-trader",
+        service_name: str = "NUERAL-TRADER-5",
         jaeger_host: str = "localhost",
         jaeger_port: int = 6831,
         enabled: bool = True,

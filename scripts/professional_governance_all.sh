@@ -37,7 +37,7 @@ done
 
 echo "============================================="
 echo "PROFESSIONAL GOVERNANCE: ALL CHECKS"
-echo "Repo: CTO-TEST-AI-trading-Bot"
+echo "Repo: NUERAL-TRADER-5"
 echo "Date: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
 echo "============================================="
 
