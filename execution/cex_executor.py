@@ -167,4 +167,13 @@ class CEXExecutor:
         self.event_bus.unsubscribe("STOP_LOSS", self._handle_stop_loss)
         self.event_bus.unsubscribe("TAKE_PROFIT", self._handle_take_profit)
         if self._client:
-            await self._client.close()
+            try:
+                await self._client.close()
+            except Exception as exc:
+                logger.warning("{} client close failed: {}", self.exchange_id, exc)
+            finally:
+                self._client = None
+
+    async def close(self) -> None:
+        """Compatibility alias used by main shutdown sequence."""
+        await self.stop()

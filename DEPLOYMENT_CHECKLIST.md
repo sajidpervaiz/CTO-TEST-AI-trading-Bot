@@ -1,6 +1,20 @@
 # 🎯 TIER 0 DEPLOYMENT CHECKLIST
 ## Step-by-Step Live Trading Activation
 
+Project Branding: NUERAL-TRADER-5
+
+## Canonical Flow Notice (Current)
+
+Use this checklist as historical reference.
+
+For current production execution, use:
+
+1. `DEPLOYMENT_GAP_CLOSURE.md`
+2. `docker-compose.prod-ready.yml`
+3. `.env.production`
+
+If any step here conflicts with that flow, follow `DEPLOYMENT_GAP_CLOSURE.md`.
+
 ---
 
 ## 📋 PRE-DEPLOYMENT (Day Before)
@@ -26,7 +40,7 @@
 
 - [ ] **Run existing tests** (should all pass)
   ```bash
-  cd /workspaces/CTO-TEST-AI-trading-Bot
+  cd /workspaces/nueral-trader-5
   pytest tests/unit/ -q
   # Expected: 49 passed
   ```
@@ -54,7 +68,7 @@
 
 - [ ] **Check disk space**
   ```bash
-  df /workspaces/CTO-TEST-AI-trading-Bot
+  df /workspaces/nueral-trader-5
   # Expected: >1GB available
   ```
 
@@ -72,7 +86,7 @@
 
 - [ ] **Run deployment script**
   ```bash
-  cd /workspaces/CTO-TEST-AI-trading-Bot
+  cd /workspaces/nueral-trader-5
   bash scripts/deploy_tier0.sh
   ```
 
@@ -221,7 +235,7 @@
 
 - [ ] **Save logs location**
   ```
-  Logs saved to: /workspaces/CTO-TEST-AI-trading-Bot/logs/
+  Logs saved to: /workspaces/nueral-trader-5/logs/
   - bot.log (main log)
   - audit.log (order audit trail)
   - alerts.log (anomalies)

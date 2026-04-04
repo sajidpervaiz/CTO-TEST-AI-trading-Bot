@@ -1,6 +1,8 @@
 # TIER 0 PRODUCTION-SAFE IMPLEMENTATION CHECKLIST
 ## Complete Week 1-2 Build Status
 
+Project Branding: NUERAL-TRADER-5
+
 **Date:** April 1, 2026  
 **Status:** ✅ PRODUCTION-READY (All TIER 0 components implemented)  
 **Test Status:** 49/49 original tests passing + Production safety tests added  
@@ -453,7 +455,7 @@ $ curl -s http://127.0.0.1:8000/health | jq
 
 **To Deploy:**
 ```bash
-cd /workspaces/CTO-TEST-AI-trading-Bot
+cd /workspaces/nueral-trader-5
 
 # Verify tests pass
 python3 -m pytest tests/unit/ -v --tb=short

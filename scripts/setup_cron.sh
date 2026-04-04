@@ -5,7 +5,7 @@
 # Configure health checks to run automatically every 6 hours
 ################################################################################
 
-PROJECT_ROOT="/workspaces/CTO-TEST-AI-trading-Bot"
+PROJECT_ROOT="/workspaces/NUERAL-TRADER-5"
 CRON_LOG="$PROJECT_ROOT/logs/cron_setup.log"
 
 log() {
@@ -29,7 +29,7 @@ log "Creating cron job..."
 cat > /tmp/tier0_cron.txt << 'EOF'
 # TIER 0 Production Health Checks
 # Run every 6 hours
-0 0,6,12,18 * * * cd /workspaces/CTO-TEST-AI-trading-Bot && /bin/bash scripts/health_check.sh >> logs/cron.log 2>&1
+0 0,6,12,18 * * * cd /workspaces/NUERAL-TRADER-5 && /bin/bash scripts/health_check.sh >> logs/cron.log 2>&1
 EOF
 
 # Add to crontab (if not already added)

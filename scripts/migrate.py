@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Database migration script for neural-trader-v4."""
+"""Database migration script for NUERAL-TRADER-5."""
 from __future__ import annotations
 
 import asyncio

@@ -1,5 +1,17 @@
 # 📚 MASTER INDEX: TIER 0 PRODUCTION DEPLOYMENT
 
+Project Branding: NUERAL-TRADER-5
+
+## Canonical Deployment Notice (Current)
+
+For active production operations, use:
+
+1. `DEPLOYMENT_GAP_CLOSURE.md`
+2. `docker-compose.prod-ready.yml`
+3. `.env.production`
+
+This file and other TIER0 deployment manuals are retained as legacy references.
+
 **Status:** 🟢 **PRODUCTION READY**
 **Date:** April 1, 2024
 **Version:** TIER 0 Complete Implementation
@@ -9,6 +21,12 @@
 ## 🗂️ Documentation Map
 
 ### 🚀 **START HERE** (Pick Your Path)
+
+Preferred modern path (Docker-only, reproducible):
+1. Read `DEPLOYMENT_GAP_CLOSURE.md`
+2. `cp .env.production.example .env.production`
+3. `docker compose -f docker-compose.prod-ready.yml --env-file .env.production up -d clickhouse clickhouse-migrator gateway bridge-api ui-static`
+4. `docker compose -f docker-compose.prod-ready.yml --env-file .env.production --profile e2e up --build --abort-on-container-exit e2e-tests`
 
 **Path 1: "I want to deploy NOW"** (30 minutes)
 1. Read: [`DEPLOYMENT_SUMMARY.md`](#deployment-summary) (5 min)
@@ -211,7 +229,7 @@ bash scripts/setup_cron.sh
 **Verify Installed:**
 ```bash
 crontab -l | grep "TIER 0"
-# Should see: 0 0,6,12,18 * * * cd /workspaces/CTO-TEST-AI-trading-Bot && bash scripts/health_check.sh
+# Should see: 0 0,6,12,18 * * * cd /workspaces/nueral-trader-5 && bash scripts/health_check.sh
 ```
 
 ---

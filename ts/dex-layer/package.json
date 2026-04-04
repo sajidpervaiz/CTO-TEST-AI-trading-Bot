@@ -1,7 +1,7 @@
 {
-  "name": "neural-trader-dex-layer",
+  "name": "nueral-trader-5-dex-layer",
   "version": "1.0.0",
-  "description": "TypeScript DEX integration layer for neural-trader-v4",
+  "description": "TypeScript DEX integration layer for NUERAL-TRADER-5",
   "main": "dist/server/index.js",
   "scripts": {
     "build": "tsc",

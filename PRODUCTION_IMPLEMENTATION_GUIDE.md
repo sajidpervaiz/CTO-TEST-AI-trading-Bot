@@ -1,6 +1,8 @@
 # Production-Grade Multi-Venue Crypto Trading Engine
 ## Complete Implementation Audit & Roadmap
 
+Project Branding: NUERAL-TRADER-5
+
 **Date:** April 1, 2026  
 **Status:** Ready for Production Implementation  
 **Current Completion:** ~30% (44 features, 12 partial, 31 not started)  
@@ -267,8 +269,10 @@ Key metrics:
 ### **Phase 6: Production Infrastructure (Week 15, 10 days)**
 **Focus: Reliability & Observability**
 
+Note: The canonical production orchestration file is `docker-compose.prod-ready.yml`.
+
 Files to create/enhance:
-- [ ] **docker-compose.yml** (TimescaleDB, Redis Cluster, NATS)
+- [ ] **docker-compose.prod-ready.yml** (ClickHouse, bridge-api, gateway, UI, E2E profile)
 - [ ] **monitoring/grafana-dashboards/** (5 dashboard JSONs)
 - [ ] **monitoring/prometheus.yml** (scrape configs, recording rules)
 - [ ] **monitoring/alertmanager.yml** (PagerDuty/Slack routing)
@@ -348,7 +352,7 @@ ts/dex-layer/
 ├── src/common/mev-protection.ts (CREATE)
 └── src/bridge/ (CREATE)
 
-docker-compose.yml (ENHANCE)
+docker-compose.prod-ready.yml (ENHANCE)
 ```
 
 ---
@@ -529,6 +533,6 @@ python scripts/test_liquidation_scenarios.py
 
 ## Questions?
 
-Open `/workspaces/CTO-TEST-AI-trading-Bot/research/notebooks/PRODUCTION_AUDIT.ipynb` for detailed analysis with visualizations.
+Open `/workspaces/nueral-trader-5/research/notebooks/PRODUCTION_AUDIT.ipynb` for detailed analysis with visualizations.
 
 **Status:** Ready to start implementation. Choose your timeline (4 weeks, 6 weeks, or 16 weeks). All phases are well-defined with specific files and effort estimates.
